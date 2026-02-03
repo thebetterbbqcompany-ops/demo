@@ -1,0 +1,79 @@
+// 1. UNIT TEST: VERIFY CONNECTION
+pm.test("Status code is 200", function () {
+    pm.response.to.have.status(200);
+});
+
+// 2. VISUALIZER: DASHBOARD GENERATOR
+var template = `
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <div style="padding: 20px; font-family: 'Courier New', monospace; background: #1e1e1e; color: #00ff00;">
+        <h2>🥩 NEURAL PITMASTER: <span id="status">CONNECTING...</span></h2>
+        <div style="display: flex; gap: 20px;">
+            <div style="flex: 2;">
+                <canvas id="tempChart"></canvas>
+            </div>
+            <div style="flex: 1; border: 1px solid #333; padding: 10px; height: 300px; overflow-y: scroll;">
+                <h3>🧠 CORTEX LOG</h3>
+                <div id="log" style="font-size: 12px; color: #ccc;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('tempChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Current Temp (°F)',
+                    borderColor: '#ff4444',
+                    data: []
+                }, {
+                    label: 'Target Temp (°F)',
+                    borderColor: '#4444ff',
+                    borderDash: [5, 5],
+                    data: []
+                }]
+            },
+            options: { animation: false }
+        });
+
+        // --- THE FIX: APPEND /stream TO THE CURRENT URL ---
+        // The Postman Request is static (ends instantly).
+        // This JS opens the specific stream channel.
+        const streamUrl = "${pm.request.url}/stream"; 
+        
+        console.log("Connecting to Neural Stream:", streamUrl);
+        const source = new EventSource(streamUrl);
+
+        source.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            
+            // UPDATE STATUS
+            document.getElementById('status').innerText = data.status;
+
+            // UPDATE CHART
+            const time = new Date().toLocaleTimeString();
+            if (chart.data.labels.length > 20) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+                chart.data.datasets[1].data.shift();
+            }
+            chart.data.labels.push(time);
+            chart.data.datasets[0].data.push(data.temp);
+            chart.data.datasets[1].data.push(data.target);
+            chart.update();
+
+            // UPDATE LOG
+            const log = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.style.marginBottom = "8px";
+            entry.innerHTML = "<span style='color: #888;'>[" + time + "]</span> " + 
+                              "<strong style='color: #fff;'>" + data.thought.reasoning + "</strong>";
+            log.insertBefore(entry, log.firstChild);
+        };
+    </script>
+`;
+
+pm.visualizer.set(template);
