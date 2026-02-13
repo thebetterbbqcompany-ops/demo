@@ -16,5 +16,5 @@ pip install --upgrade pip
 
 echo "📦 Installing Libraries..."
 # ADDED: httpx
-pip install fastapi "uvicorn[standard]" pyjwt pydantic python-multipart requests httpx sse-starlette
+pip install fastapi "uvicorn[standard]" pyjwt pydantic python-multipart requests httpx sse-starlette gradio
 echo "✅ Environment Ready."
